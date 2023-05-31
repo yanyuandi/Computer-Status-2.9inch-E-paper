@@ -29,11 +29,10 @@ def get_gpu_usage():
 
 
 def main():
-    # 连接ESP8266开发板的TCP服务器
+    # 连接ESP8266开发板的UDP服务器
     host = '192.168.1.42'  # ESP8266开发板的IP地址
-    port = 80
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
+    port = 8888
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
         cpu_usage = get_cpu_usage()
@@ -41,7 +40,6 @@ def main():
         disk_usage = get_disk_usage()
         gpu_usage = get_gpu_usage()
 
-        # 将数据封装成JSON格式
         # 将数据封装成JSON格式
         data = {
             'cpu': f"{round(cpu_usage, 1)}%",  # 保留一位小数
@@ -52,13 +50,13 @@ def main():
         json_data = json.dumps(data)
 
         # 发送JSON数据到ESP8266开发板
-        sock.sendall(json_data.encode())
+        sock.sendto(json_data.encode(), (host, port))
 
         # 打印发送的JSON数据
         print(f"Sent data: {json_data}")
 
         # 等待一段时间再进行下一次数据采集和发送
-        time.sleep(5)
+        time.sleep(1)
 
 
 if __name__ == '__main__':
