@@ -3,9 +3,12 @@
 #include <GxEPD2_BW.h>
 #include <U8g2_for_Adafruit_GFX.h>
 #include "tubiao.h"
+#include <WiFiUdp.h>
 
-const char* ssid = "wifi账号";
-const char* password = "wifi密码";
+const char* ssid = "输入wifi账号";
+const char* password = "输入wifi密码";
+WiFiUDP udp;
+unsigned int localPort = 8888;  // 本地端口号，可以自定义
 
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
@@ -97,32 +100,26 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // 启动TCP服务器
-  server.begin();
-  Serial.println("Server started");
+  // 启动UDP服务器
+  udp.begin(localPort);
+  Serial.println("UDP started");
 }
 
 void loop() {
-  // 等待客户端连接
-  WiFiClient client = server.available();
-  if (!client) {
-    return;
-  }
+// 等待接收数据
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    char packetBuffer[packetSize];
+    udp.read(packetBuffer, packetSize);
 
-  // 读取客户端发送的数据
-  while (client.connected()) {
-    if (client.available()) {
-      String json_data = client.readStringUntil('\r');
-      Serial.println(json_data);
-
-      // 解析JSON数据
-      StaticJsonDocument<200> doc;
-      DeserializationError error = deserializeJson(doc, json_data);
-      if (error) {
-        Serial.print("deserializeJson() failed: ");
-        Serial.println(error.f_str());
-        return;
-      }
+    // 解析JSON数据
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, packetBuffer);
+    if (error) {
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.f_str());
+      return;
+    }
 
       // 打印解析后的数据
       const char* cpu = doc["cpu"];
@@ -167,7 +164,7 @@ void loop() {
       display.powerOff();
     }
   }
-}
+
 
 
 
